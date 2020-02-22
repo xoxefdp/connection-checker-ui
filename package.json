@@ -1,0 +1,16 @@
+{
+  "name": "connection-checker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron --disable-gpu src/main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^7.1.9",
+    "the-type-validator": "^1.0.2"
+  }
+}
