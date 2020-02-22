@@ -5,7 +5,7 @@ let mainWindow;
 
 app.on('ready', () => {
   mainWindow = new BrowserWindow({
-    title: 'Connection Checker',
+    title: 'Connection Checker UI',
     width: 360,
     height: 360,
     frame: false,

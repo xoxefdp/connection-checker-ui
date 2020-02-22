@@ -1,5 +1,5 @@
 {
-  "name": "connection-checker",
+  "name": "connection-checker-ui",
   "version": "1.0.0",
   "description": "",
   "main": "src/main.js",
