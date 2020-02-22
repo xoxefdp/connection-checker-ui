@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+      }
+      p {
+        margin: 0;
+      }
+      .flex-container {
+        display: -ms-flexbox;
+        display: -webkit-flex;
+        display: flex;
+        -webkit-flex-direction: column;
+        -ms-flex-direction: column;
+        flex-direction: column;
+        -webkit-flex-wrap: nowrap;
+        -ms-flex-wrap: nowrap;
+        flex-wrap: nowrap;
+        -webkit-justify-content: space-around;
+        -ms-flex-pack: distribute;
+        justify-content: space-around;
+        -webkit-align-content: center;
+        -ms-flex-line-pack: center;
+        align-content: center;
+        -webkit-align-items: center;
+        -ms-flex-align: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        color: white;
+        font-family: 'Courier New', Courier, monospace;
+        text-align: center;
+      }
+
+      .flex-item {
+        -webkit-order: 0;
+        -ms-flex-order: 0;
+        order: 0;
+        -webkit-flex: 0 1 auto;
+        -ms-flex: 0 1 auto;
+        flex: 0 1 auto;
+        -webkit-align-self: auto;
+        -ms-flex-item-align: auto;
+        align-self: auto;
+      }
+
+      .CHECKING {
+        background-color: blue;
+      }
+      .CONNECTED {
+        background-color: green;
+      }
+      .DISCONNECTED {
+        background-color: red;
+      }
+
+      .network-state {
+        font-weight: bolder;
+        font-size: 40px;
+      }
+
+      .network-label {
+        font-size: 25px;
+      }
+
+      .network-value {
+        font-weight: bold;
+        font-size: 20px;
+      }
+    </style>
+  </head>
+<body class="CHECKING">
+  <div class="flex-container">
+    <div class="flex-item">
+      <p class="network-label">INTERNET</p>
+      <p class="network-value" id="wanIP">?</p>
+    </div>
+    <div class="flex-item">
+      <p class="network-state" id="network-state">CHECKING</p>
+    </div>
+    <div class="flex-item" id="lanIP">
+      <p class="network-label">LOCAL</p>
+      <p class="network-value">?</p>
+    </div>
+  </div>
+<script>
+  const { ipcRenderer } = require('electron')
+
+  const TimeConstant = {
+    SECOND: 1000,
+  },
+  // NETWORK TIME CONSTANTS
+  INTERNET_CHECK_INTERVAL = 5 * TimeConstant.SECOND,
+  NETWORK_REQUEST_TIMEOUT = 2 * TimeConstant.SECOND
+  // NETWORK CONSTANTS
+  Network = {
+    State: {
+      CHECKING: 'CHECKING',
+      CONNECTED: 'CONNECTED',
+      DISCONNECTED: 'DISCONNECTED',
+    },
+    Event: {
+      ON_NETWORK_CHECKING: 'onNetworkChecking',
+      ON_NETWORK_CONNECTED: 'onNetworkConnected',
+      ON_NETWORK_DISCONNECTED: 'onNetworkDisconnected',
+    }
+  },
+
+  onNetworkChecking = new Event(Network.Event.ON_NETWORK_CHECKING),
+  onNetworkConnected = new Event(Network.Event.ON_NETWORK_CONNECTED),
+  onNetworkDisconnected = new Event(Network.Event.ON_NETWORK_DISCONNECTED)
+
+  /**
+   * HTTP request methods
+   * (https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods)
+   * 
+   * Specifies GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE
+   * (https://tools.ietf.org/html/rfc7231#section-4)
+   *
+   * Specifies PATCH
+   * (https://tools.ietf.org/html/rfc5789#section-2)
+   */
+  RequestMethod = {
+    GET: 'GET',
+    HEAD: 'HEAD',
+    POST: 'POST',
+    PUT: 'PUT',
+    PATCH: 'PATCH',
+    DELETE: 'DELETE',
+    OPTIONS: 'OPTIONS',
+    CONNECT: 'CONNECT',
+    TRACE: 'TRACE',
+  },
+  INTERNET_URLS = [
+    { url: 'https://google.com', method: RequestMethod.HEAD }, // USA
+    { url: 'https://yandex.ru', method: RequestMethod.HEAD }, // Rusia
+    { url: 'https://baidu.com', method: RequestMethod.HEAD }, // China
+  ]
+
+
+  let networkState = null
+
+  function _onNetworkChanged(state) {
+    updateUIValues('network-state', Network.State.CHECKING)
+    updateBodyClass(Network.State.CHECKING)
+    networkState = state
+    ipcRenderer.send('network-status', '_onNetworkChanged() ' + networkState)
+  }
+
+  function _onNetworkChecking() {
+    document.dispatchEvent(onNetworkChecking)
+  }
+
+  function _onNetworkConnected() {
+    if (networkState !== Network.State.CONNECTED) {
+      LANIpCheck()
+      WANIpCheck()
+      _onNetworkChanged(Network.State.CONNECTED)
+      document.dispatchEvent(onNetworkConnected)
+    }
+  }
+  function _onNetworkDisconnected() {
+    if (networkState !== Network.State.DISCONNECTED) {
+      LANIpCheck()
+      WANIpCheck()
+      _onNetworkChanged(Network.State.DISCONNECTED)
+      document.dispatchEvent(onNetworkDisconnected)
+    }
+  }
+
+  function networkCheck() {
+    setTimeout(() => {
+      _onNetworkChecking()
+      fetch('https://google.com', {
+        method: RequestMethod.HEAD,
+        mode: 'cors',
+        timeout: NETWORK_REQUEST_TIMEOUT
+      }).then( (response) => {
+        response.ok
+          ? _onNetworkConnected()
+          : _onNetworkDisconnected()
+      }).catch( () => {
+        _onNetworkDisconnected()
+      }).finally( () => {
+        networkCheck()
+      })
+    }, INTERNET_CHECK_INTERVAL)
+  }
+
+
+  function updateUIValues(elementID, state) {
+    document.getElementById(elementID).innerText = state
+  }
+
+  function updateBodyClass(newClass) {
+    document.getElementsByTagName('body')[0].className = newClass
+  }
+
+
+  function LANIpCheck() {
+    ipcRenderer.send('request-lan-ip')
+  }
+
+  ipcRenderer.on('send-lan-ip', (sender, localInterfaces) => {
+    const lanIPElement = document.getElementById('lanIP')
+    lanIPElement.innerHTML = ''
+
+    let ifaceLabel = document.createElement("P")
+    ifaceLabel.className = 'network-label'
+
+    const labelText = document.createTextNode('LOCAL')
+    ifaceLabel.appendChild(labelText)
+
+    lanIPElement.appendChild(ifaceLabel)
+    if (localInterfaces.length >= 1 ) {
+      for (let index = 0; index < localInterfaces.length; index++) {
+        const iface = localInterfaces[index]
+
+        let ifaceElement = document.createElement("P")
+        ifaceElement.className = 'network-value'
+
+        const ifaceData = document.createTextNode(iface.name + ': ' + iface.address)
+        ifaceElement.appendChild(ifaceData)
+
+        lanIPElement.appendChild(ifaceElement)
+      }
+    } else {
+      let ifaceElement = document.createElement("P")
+      ifaceElement.className = 'network-value'
+
+      const ifaceData = document.createTextNode('?')
+      ifaceElement.appendChild(ifaceData)
+
+      lanIPElement.appendChild(ifaceElement)
+    }
+  })
+
+
+
+  // https://bot.whatismyipaddress.com
+  function WANIpCheck() {
+    fetch('https://bot.whatismyipaddress.com', {
+      method: RequestMethod.GET,
+      mode: 'cors',
+      timeout: NETWORK_REQUEST_TIMEOUT
+    }).then( (res) => {
+      return res.text()
+    }).then( (wanIP) => {
+      updateUIValues('wanIP', wanIP)
+    }).catch( (fail) => {
+      console.log(fail)
+      updateUIValues('wanIP', '?')
+    })
+  }
+
+
+
+  document.addEventListener(Network.Event.ON_NETWORK_CHECKING, function() {
+    ipcRenderer.send('network-status', '_onNetworkChecking() ' + networkState)
+    // updateBodyClass(Network.State.CHECKING)
+  }, true)
+
+  document.addEventListener(Network.Event.ON_NETWORK_CONNECTED, function() {
+    updateUIValues('network-state',Network.State.CONNECTED)
+    updateBodyClass(Network.State.CONNECTED)
+    ipcRenderer.send('network-status', '_onNetworkConnected()')
+  }, true)
+
+  document.addEventListener(Network.Event.ON_NETWORK_DISCONNECTED, function() {
+    updateUIValues('network-state',Network.State.DISCONNECTED)
+    updateBodyClass(Network.State.DISCONNECTED)
+    ipcRenderer.send('network-status', '_onNetworkDisconnected()')
+  }, true)
+
+  networkCheck()
+</script>
+</body>
+</html>
