@@ -89,108 +89,9 @@
   </div>
 <script>
   const { ipcRenderer } = require('electron')
+  const { startConnectionChecker, networkState, ConnectionState, ConnectionEvent } = require('connection-checker')
 
-  const TimeConstant = {
-    SECOND: 1000,
-  },
-  // NETWORK TIME CONSTANTS
-  INTERNET_CHECK_INTERVAL = 5 * TimeConstant.SECOND,
-  NETWORK_REQUEST_TIMEOUT = 2 * TimeConstant.SECOND
-  // NETWORK CONSTANTS
-  Network = {
-    State: {
-      CHECKING: 'CHECKING',
-      CONNECTED: 'CONNECTED',
-      DISCONNECTED: 'DISCONNECTED',
-    },
-    Event: {
-      ON_NETWORK_CHECKING: 'onNetworkChecking',
-      ON_NETWORK_CONNECTED: 'onNetworkConnected',
-      ON_NETWORK_DISCONNECTED: 'onNetworkDisconnected',
-    }
-  },
-
-  onNetworkChecking = new Event(Network.Event.ON_NETWORK_CHECKING),
-  onNetworkConnected = new Event(Network.Event.ON_NETWORK_CONNECTED),
-  onNetworkDisconnected = new Event(Network.Event.ON_NETWORK_DISCONNECTED)
-
-  /**
-   * HTTP request methods
-   * (https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods)
-   * 
-   * Specifies GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE
-   * (https://tools.ietf.org/html/rfc7231#section-4)
-   *
-   * Specifies PATCH
-   * (https://tools.ietf.org/html/rfc5789#section-2)
-   */
-  RequestMethod = {
-    GET: 'GET',
-    HEAD: 'HEAD',
-    POST: 'POST',
-    PUT: 'PUT',
-    PATCH: 'PATCH',
-    DELETE: 'DELETE',
-    OPTIONS: 'OPTIONS',
-    CONNECT: 'CONNECT',
-    TRACE: 'TRACE',
-  },
-  INTERNET_URLS = [
-    { url: 'https://google.com', method: RequestMethod.HEAD }, // USA
-    { url: 'https://yandex.ru', method: RequestMethod.HEAD }, // Rusia
-    { url: 'https://baidu.com', method: RequestMethod.HEAD }, // China
-  ]
-
-
-  let networkState = null
-
-  function _onNetworkChanged(state) {
-    updateUIValues('network-state', Network.State.CHECKING)
-    updateBodyClass(Network.State.CHECKING)
-    networkState = state
-    ipcRenderer.send('network-status', '_onNetworkChanged() ' + networkState)
-  }
-
-  function _onNetworkChecking() {
-    document.dispatchEvent(onNetworkChecking)
-  }
-
-  function _onNetworkConnected() {
-    if (networkState !== Network.State.CONNECTED) {
-      LANIpCheck()
-      WANIpCheck()
-      _onNetworkChanged(Network.State.CONNECTED)
-      document.dispatchEvent(onNetworkConnected)
-    }
-  }
-  function _onNetworkDisconnected() {
-    if (networkState !== Network.State.DISCONNECTED) {
-      LANIpCheck()
-      WANIpCheck()
-      _onNetworkChanged(Network.State.DISCONNECTED)
-      document.dispatchEvent(onNetworkDisconnected)
-    }
-  }
-
-  function networkCheck() {
-    setTimeout(() => {
-      _onNetworkChecking()
-      fetch('https://google.com', {
-        method: RequestMethod.HEAD,
-        mode: 'cors',
-        timeout: NETWORK_REQUEST_TIMEOUT
-      }).then( (response) => {
-        response.ok
-          ? _onNetworkConnected()
-          : _onNetworkDisconnected()
-      }).catch( () => {
-        _onNetworkDisconnected()
-      }).finally( () => {
-        networkCheck()
-      })
-    }, INTERNET_CHECK_INTERVAL)
-  }
-
+  const NETWORK_REQUEST_TIMEOUT = 2000
 
   function updateUIValues(elementID, state) {
     document.getElementById(elementID).innerText = state
@@ -240,7 +141,6 @@
   })
 
 
-
   // https://bot.whatismyipaddress.com
   function WANIpCheck() {
     fetch('https://bot.whatismyipaddress.com', {
@@ -252,31 +152,35 @@
     }).then( (wanIP) => {
       updateUIValues('wanIP', wanIP)
     }).catch( (fail) => {
-      console.log(fail)
       updateUIValues('wanIP', '?')
     })
   }
 
-
-
-  document.addEventListener(Network.Event.ON_NETWORK_CHECKING, function() {
-    ipcRenderer.send('network-status', '_onNetworkChecking() ' + networkState)
-    // updateBodyClass(Network.State.CHECKING)
+  window.addEventListener(ConnectionEvent.ON_NETWORK_CHECKING, function() {
+    ipcRenderer.send('network-status', '_onNetworkChecking() ' + networkState())
   }, true)
 
-  document.addEventListener(Network.Event.ON_NETWORK_CONNECTED, function() {
+  window.addEventListener(ConnectionEvent.ON_NETWORK_CHANGED, function(event) {
+    ipcRenderer.send('network-status', '_onNetworkChanged() from state: ' + event.detail.from + ', to state: ' + event.detail.to)
+  }, true)
+
+  window.addEventListener(ConnectionEvent.ON_NETWORK_CONNECTED, function() {
     updateUIValues('network-state',Network.State.CONNECTED)
     updateBodyClass(Network.State.CONNECTED)
+    LANIpCheck()
+    WANIpCheck()
     ipcRenderer.send('network-status', '_onNetworkConnected()')
   }, true)
 
-  document.addEventListener(Network.Event.ON_NETWORK_DISCONNECTED, function() {
+  window.addEventListener(ConnectionEvent.ON_NETWORK_DISCONNECTED, function() {
     updateUIValues('network-state',Network.State.DISCONNECTED)
     updateBodyClass(Network.State.DISCONNECTED)
+    LANIpCheck()
+    WANIpCheck()
     ipcRenderer.send('network-status', '_onNetworkDisconnected()')
   }, true)
 
-  networkCheck()
+  startConnectionChecker()
 </script>
 </body>
 </html>
