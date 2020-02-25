@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "electron": "^7.1.9",
-    "the-type-validator": "^1.0.2"
+    "connection-checker": "^1.0.0",
+    "electron": "^7.1.9"
   }
 }

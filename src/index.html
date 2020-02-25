@@ -144,7 +144,7 @@
   // https://bot.whatismyipaddress.com
   function WANIpCheck() {
     fetch('https://bot.whatismyipaddress.com', {
-      method: RequestMethod.GET,
+      method: 'GET',
       mode: 'cors',
       timeout: NETWORK_REQUEST_TIMEOUT
     }).then( (res) => {
@@ -165,16 +165,16 @@
   }, true)
 
   window.addEventListener(ConnectionEvent.ON_NETWORK_CONNECTED, function() {
-    updateUIValues('network-state',Network.State.CONNECTED)
-    updateBodyClass(Network.State.CONNECTED)
+    updateUIValues('network-state',ConnectionState.CONNECTED)
+    updateBodyClass(ConnectionState.CONNECTED)
     LANIpCheck()
     WANIpCheck()
     ipcRenderer.send('network-status', '_onNetworkConnected()')
   }, true)
 
   window.addEventListener(ConnectionEvent.ON_NETWORK_DISCONNECTED, function() {
-    updateUIValues('network-state',Network.State.DISCONNECTED)
-    updateBodyClass(Network.State.DISCONNECTED)
+    updateUIValues('network-state', ConnectionState.DISCONNECTED)
+    updateBodyClass(ConnectionState.DISCONNECTED)
     LANIpCheck()
     WANIpCheck()
     ipcRenderer.send('network-status', '_onNetworkDisconnected()')
