@@ -13,7 +13,7 @@ app.on('ready', () => {
     y: 0,
     resizable: false,
     webPreferences: {
-      devTools: false,
+      // devTools: false,
       nodeIntegration: true
     }
   })

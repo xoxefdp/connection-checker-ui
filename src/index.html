@@ -89,9 +89,14 @@
   </div>
 <script>
   const { ipcRenderer } = require('electron')
-  const { startConnectionChecker, networkState, ConnectionState, ConnectionEvent } = require('connection-checker')
+  const { startChecker, getConnectionState, ConnectionState, ConnectionEvent } = require('connection-checker')
+  const { requestLogger } = require('the-browser-logger')
 
   const NETWORK_REQUEST_TIMEOUT = 2000
+
+  function logger() {
+    return requestLogger('connection-checker-ui')
+  }
 
   function updateUIValues(elementID, state) {
     document.getElementById(elementID).innerText = state
@@ -157,15 +162,18 @@
   }
 
   window.addEventListener(ConnectionEvent.ON_NETWORK_CHECKING, function() {
-    ipcRenderer.send('network-status', '_onNetworkChecking() ' + networkState())
+    logger().debug(ConnectionEvent.ON_NETWORK_CHECKING)
+    ipcRenderer.send('network-status', '_onNetworkChecking() ' + getConnectionState())
   }, true)
 
   window.addEventListener(ConnectionEvent.ON_NETWORK_CHANGED, function(event) {
+    logger().debug(ConnectionEvent.ON_NETWORK_CHANGED)
     ipcRenderer.send('network-status', '_onNetworkChanged() from state: ' + event.detail.from + ', to state: ' + event.detail.to)
   }, true)
 
   window.addEventListener(ConnectionEvent.ON_NETWORK_CONNECTED, function() {
-    updateUIValues('network-state',ConnectionState.CONNECTED)
+    logger().debug(ConnectionEvent.ON_NETWORK_CONNECTED)
+    updateUIValues('network-state', ConnectionState.CONNECTED)
     updateBodyClass(ConnectionState.CONNECTED)
     LANIpCheck()
     WANIpCheck()
@@ -173,6 +181,7 @@
   }, true)
 
   window.addEventListener(ConnectionEvent.ON_NETWORK_DISCONNECTED, function() {
+    logger().debug(ConnectionEvent.ON_NETWORK_DISCONNECTED)
     updateUIValues('network-state', ConnectionState.DISCONNECTED)
     updateBodyClass(ConnectionState.DISCONNECTED)
     LANIpCheck()
@@ -180,7 +189,7 @@
     ipcRenderer.send('network-status', '_onNetworkDisconnected()')
   }, true)
 
-  startConnectionChecker()
+  startChecker()
 </script>
 </body>
 </html>
