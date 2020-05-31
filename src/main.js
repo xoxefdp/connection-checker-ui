@@ -22,8 +22,7 @@ app.on('ready', () => {
 })
 
 
-
-function requestlocalInterfaces() {
+function requestLocalInterfaces() {
   const networkInterfaces = os.networkInterfaces()
   let localInterfaces = []
   Object.keys(networkInterfaces).forEach( (ifname) => {
@@ -55,9 +54,15 @@ function requestlocalInterfaces() {
 
 
 ipcMain.on('request-lan-ip', (event) => {
-  requestlocalInterfaces()
+  console.log('request-lan-ip')
+  requestLocalInterfaces()
 })
 
 ipcMain.on('network-status', (event, status) => {
   console.log(status)
+})
+
+ipcMain.on('application-close', (event) => {
+  console.log('application-close')
+  app.quit()
 })

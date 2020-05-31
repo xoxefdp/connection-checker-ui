@@ -4,17 +4,20 @@
   "description": "",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron --disable-gpu src/main.js",
+    "clean": "rimraf dist",
+    "prestart": "npm run clean",
+    "start": "npx electron --disable-gpu src/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "connection-checker": "^1.1.0",
+    "connection-checker": "^1.1.2",
     "electron": "^7.1.9",
     "timer-creator": "^1.0.1"
   },
   "devDependencies": {
-    "the-browser-logger": "^1.0.4"
+    "the-browser-logger": "^1.0.4",
+    "rimraf": "^3.0.2"
   }
 }

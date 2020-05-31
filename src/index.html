@@ -10,6 +10,11 @@
       p {
         margin: 0;
       }
+      .btn-quit {
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
       .flex-container {
         display: -ms-flexbox;
         display: -webkit-flex;
@@ -74,6 +79,8 @@
     </style>
   </head>
 <body class="CHECKING">
+  <button class="btn-quit" onclick="applicationClose()">X</button>
+  <div class="btn-quit"></div>
   <div class="flex-container">
     <div class="flex-item">
       <p class="network-label">INTERNET</p>
@@ -96,6 +103,10 @@
 
   function logger() {
     return requestLogger('connection-checker-ui')
+  }
+
+  function applicationClose() {
+    ipcRenderer.send('application-close')
   }
 
   function updateUIValues(elementID, state) {
