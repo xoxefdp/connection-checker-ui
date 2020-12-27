@@ -1,0 +1,74 @@
+body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+}
+p {
+  margin: 0;
+}
+.btn-quit {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.flex-container {
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  -webkit-flex-wrap: nowrap;
+  -ms-flex-wrap: nowrap;
+  flex-wrap: nowrap;
+  -webkit-justify-content: space-around;
+  -ms-flex-pack: distribute;
+  justify-content: space-around;
+  -webkit-align-content: center;
+  -ms-flex-line-pack: center;
+  align-content: center;
+  -webkit-align-items: center;
+  -ms-flex-align: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  color: white;
+  font-family: 'Courier New', Courier, monospace;
+  text-align: center;
+}
+
+.flex-item {
+  -webkit-order: 0;
+  -ms-flex-order: 0;
+  order: 0;
+  -webkit-flex: 0 1 auto;
+  -ms-flex: 0 1 auto;
+  flex: 0 1 auto;
+  -webkit-align-self: auto;
+  -ms-flex-item-align: auto;
+  align-self: auto;
+}
+
+.CHECKING {
+  background-color: blue;
+}
+.CONNECTED {
+  background-color: green;
+}
+.DISCONNECTED {
+  background-color: red;
+}
+
+.network-state {
+  font-weight: bolder;
+  font-size: 40px;
+}
+
+.network-label {
+  font-size: 25px;
+}
+
+.network-value {
+  font-weight: bold;
+  font-size: 20px;
+}

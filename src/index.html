@@ -1,206 +1,24 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <style>
-      body {
-        width: 100vw;
-        height: 100vh;
-        margin: 0;
-      }
-      p {
-        margin: 0;
-      }
-      .btn-quit {
-        position: absolute;
-        right: 0;
-        top: 0;
-      }
-      .flex-container {
-        display: -ms-flexbox;
-        display: -webkit-flex;
-        display: flex;
-        -webkit-flex-direction: column;
-        -ms-flex-direction: column;
-        flex-direction: column;
-        -webkit-flex-wrap: nowrap;
-        -ms-flex-wrap: nowrap;
-        flex-wrap: nowrap;
-        -webkit-justify-content: space-around;
-        -ms-flex-pack: distribute;
-        justify-content: space-around;
-        -webkit-align-content: center;
-        -ms-flex-line-pack: center;
-        align-content: center;
-        -webkit-align-items: center;
-        -ms-flex-align: center;
-        align-items: center;
-        width: 100%;
-        height: 100%;
-        color: white;
-        font-family: 'Courier New', Courier, monospace;
-        text-align: center;
-      }
-
-      .flex-item {
-        -webkit-order: 0;
-        -ms-flex-order: 0;
-        order: 0;
-        -webkit-flex: 0 1 auto;
-        -ms-flex: 0 1 auto;
-        flex: 0 1 auto;
-        -webkit-align-self: auto;
-        -ms-flex-item-align: auto;
-        align-self: auto;
-      }
-
-      .CHECKING {
-        background-color: blue;
-      }
-      .CONNECTED {
-        background-color: green;
-      }
-      .DISCONNECTED {
-        background-color: red;
-      }
-
-      .network-state {
-        font-weight: bolder;
-        font-size: 40px;
-      }
-
-      .network-label {
-        font-size: 25px;
-      }
-
-      .network-value {
-        font-weight: bold;
-        font-size: 20px;
-      }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <script src="renderer.js"></script>
   </head>
-<body class="CHECKING">
-  <button class="btn-quit" onclick="applicationClose()">X</button>
-  <div class="btn-quit"></div>
-  <div class="flex-container">
-    <div class="flex-item">
-      <p class="network-label">INTERNET</p>
-      <p class="network-value" id="wanIP">?</p>
+  <body class="CHECKING">
+    <button class="btn-quit" onclick="applicationClose()">X</button>
+    <div class="btn-quit"></div>
+    <div class="flex-container">
+      <div class="flex-item">
+        <p class="network-label">INTERNET</p>
+        <p class="network-value" id="wanIP">?</p>
+      </div>
+      <div class="flex-item">
+        <p class="network-state" id="network-state">CHECKING</p>
+      </div>
+      <div class="flex-item" id="lanIP">
+        <p class="network-label">LOCAL</p>
+        <p class="network-value">?</p>
+      </div>
     </div>
-    <div class="flex-item">
-      <p class="network-state" id="network-state">CHECKING</p>
-    </div>
-    <div class="flex-item" id="lanIP">
-      <p class="network-label">LOCAL</p>
-      <p class="network-value">?</p>
-    </div>
-  </div>
-<script>
-  const { ipcRenderer } = require('electron')
-  const { startChecker, getConnectionState, ConnectionState, ConnectionEvent } = require('connection-checker')
-  const { requestLogger } = require('the-browser-logger')
-
-  const NETWORK_REQUEST_TIMEOUT = 2000
-
-  function logger() {
-    return requestLogger('connection-checker-ui')
-  }
-
-  function applicationClose() {
-    ipcRenderer.send('application-close')
-  }
-
-  function updateUIValues(elementID, state) {
-    document.getElementById(elementID).innerText = state
-  }
-
-  function updateBodyClass(newClass) {
-    document.getElementsByTagName('body')[0].className = newClass
-  }
-
-
-  function LANIpCheck() {
-    ipcRenderer.send('request-lan-ip')
-  }
-
-  ipcRenderer.on('send-lan-ip', (sender, localInterfaces) => {
-    const lanIPElement = document.getElementById('lanIP')
-    lanIPElement.innerHTML = ''
-
-    let ifaceLabel = document.createElement("P")
-    ifaceLabel.className = 'network-label'
-
-    const labelText = document.createTextNode('LOCAL')
-    ifaceLabel.appendChild(labelText)
-
-    lanIPElement.appendChild(ifaceLabel)
-    if (localInterfaces.length >= 1 ) {
-      for (let index = 0; index < localInterfaces.length; index++) {
-        const iface = localInterfaces[index]
-
-        let ifaceElement = document.createElement("P")
-        ifaceElement.className = 'network-value'
-
-        const ifaceData = document.createTextNode(iface.name + ': ' + iface.address)
-        ifaceElement.appendChild(ifaceData)
-
-        lanIPElement.appendChild(ifaceElement)
-      }
-    } else {
-      let ifaceElement = document.createElement("P")
-      ifaceElement.className = 'network-value'
-
-      const ifaceData = document.createTextNode('?')
-      ifaceElement.appendChild(ifaceData)
-
-      lanIPElement.appendChild(ifaceElement)
-    }
-  })
-
-
-  // https://bot.whatismyipaddress.com
-  function WANIpCheck() {
-    fetch('https://bot.whatismyipaddress.com', {
-      method: 'GET',
-      mode: 'cors',
-      timeout: NETWORK_REQUEST_TIMEOUT
-    }).then( (res) => {
-      return res.text()
-    }).then( (wanIP) => {
-      updateUIValues('wanIP', wanIP)
-    }).catch( (fail) => {
-      updateUIValues('wanIP', '?')
-    })
-  }
-
-  window.addEventListener(ConnectionEvent.ON_NETWORK_CHECKING, function() {
-    logger().debug(ConnectionEvent.ON_NETWORK_CHECKING)
-    ipcRenderer.send('network-status', '_onNetworkChecking() ' + getConnectionState())
-  }, true)
-
-  window.addEventListener(ConnectionEvent.ON_NETWORK_CHANGED, function(event) {
-    logger().debug(ConnectionEvent.ON_NETWORK_CHANGED)
-    ipcRenderer.send('network-status', '_onNetworkChanged() from state: ' + event.detail.from + ', to state: ' + event.detail.to)
-  }, true)
-
-  window.addEventListener(ConnectionEvent.ON_NETWORK_CONNECTED, function() {
-    logger().debug(ConnectionEvent.ON_NETWORK_CONNECTED)
-    updateUIValues('network-state', ConnectionState.CONNECTED)
-    updateBodyClass(ConnectionState.CONNECTED)
-    LANIpCheck()
-    WANIpCheck()
-    ipcRenderer.send('network-status', '_onNetworkConnected()')
-  }, true)
-
-  window.addEventListener(ConnectionEvent.ON_NETWORK_DISCONNECTED, function() {
-    logger().debug(ConnectionEvent.ON_NETWORK_DISCONNECTED)
-    updateUIValues('network-state', ConnectionState.DISCONNECTED)
-    updateBodyClass(ConnectionState.DISCONNECTED)
-    LANIpCheck()
-    WANIpCheck()
-    ipcRenderer.send('network-status', '_onNetworkDisconnected()')
-  }, true)
-
-  startChecker()
-</script>
-</body>
+  </body>
 </html>
