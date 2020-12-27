@@ -12,8 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "connection-checker": "^1.1.2",
-    "electron": "^7.1.9",
+    "connection-checker": "^1.4.0",
+    "electron": "^11.1.1",
     "timer-creator": "^1.0.1"
   },
   "devDependencies": {
